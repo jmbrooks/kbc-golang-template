@@ -1,180 +1,174 @@
-# Standard Go Project Layout
-
-This is a basic layout for Go application projects. It's not an official standard defined by the core Go dev team; however, it is a set of common historical and emerging project layout patterns in the Go ecosystem. Some of these patterns are more popular than others. It also has a number of small enhancements along with several supporting directories common to any large enough real world application.
-
-If you are trying to learn Go or if you are building a PoC or a toy project for yourself this project layout is an overkill. Start with something really simple (a single `main.go` file is more than enough). As your project grows keep in mind that it'll be important to make sure your code is well structured otherwise you'll end up with a messy code with lots of hidden dependencies and global state. When you have more people working on the project you'll need even more structure. That's when it's important to introduce a common way to manage packages/libraries. When you have an open source project or when you know other projects import the code from your project repository that's when it's important to have private (aka `internal`) packages and code. Clone the repository, keep what you need and delete everything else! Just because it's there it doesn't mean you have to use it all. None of these patterns are used in every single project. Even the `vendor` pattern is not universal.
-
-With Go 1.14 [`Go Modules`](https://github.com/golang/go/wiki/Modules) are finally ready for production. Use [`Go Modules`](https://blog.golang.org/using-go-modules) unless you have a specific reason not to use them and if you do then you don’t need to worry about $GOPATH and where you put your project. The basic `go.mod` file in the repo assumes your project is hosted on Github, but it's not a requirement. The module path can be anything though the first module path component should have a dot in its name (the current version of Go doesn't enforce it anymore, but if you are using slightly older versions don't be surprised if your builds fail without it). See Issues [`37554`](https://github.com/golang/go/issues/37554) and [`32819`](https://github.com/golang/go/issues/32819) if you want to know more about it.  
-
-This project layout is intentionally generic and it doesn't try to impose a specific Go package structure.
-
-This is a community effort. Open an issue if you see a new pattern or if you think one of the existing patterns needs to be updated.
-
-If you need help with naming, formatting and style start by running [`gofmt`](https://golang.org/cmd/gofmt/) and [`golint`](https://github.com/golang/lint). Also make sure to read these Go code style guidelines and recommendations:
-* https://talks.golang.org/2014/names.slide
-* https://golang.org/doc/effective_go.html#names
-* https://blog.golang.org/package-names
-* https://github.com/golang/go/wiki/CodeReviewComments
-* [Style guideline for Go packages](https://rakyll.org/style-packages) (rakyll/JBD)
-
-See [`Go Project Layout`](https://medium.com/golang-learn/go-project-layout-e5213cdcfaa2) for additional background information.
-
-More about naming and organizing packages as well as other code structure recommendations:
-* [GopherCon EU 2018: Peter Bourgon - Best Practices for Industrial Programming](https://www.youtube.com/watch?v=PTE4VJIdHPg)
-* [GopherCon Russia 2018: Ashley McNamara + Brian Ketelsen - Go best practices.](https://www.youtube.com/watch?v=MzTcsI6tn-0)
-* [GopherCon 2017: Edward Muller - Go Anti-Patterns](https://www.youtube.com/watch?v=ltqV6pDKZD8)
-* [GopherCon 2018: Kat Zien - How Do You Structure Your Go Apps](https://www.youtube.com/watch?v=oL6JBUk6tj0)
-
-## Go Directories
-
-### `/cmd`
-
-Main applications for this project.
-
-The directory name for each application should match the name of the executable you want to have (e.g., `/cmd/myapp`).
-
-Don't put a lot of code in the application directory. If you think the code can be imported and used in other projects, then it should live in the `/pkg` directory. If the code is not reusable or if you don't want others to reuse it, put that code in the `/internal` directory. You'll be surprised what others will do, so be explicit about your intentions!
-
-It's common to have a small `main` function that imports and invokes the code from the `/internal` and `/pkg` directories and nothing else.
-
-See the [`/cmd`](cmd/README.md) directory for examples.
-
-### `/internal`
-
-Private application and library code. This is the code you don't want others importing in their applications or libraries. Note that this layout pattern is enforced by the Go compiler itself. See the Go 1.4 [`release notes`](https://golang.org/doc/go1.4#internalpackages) for more details. Note that you are not limited to the top level `internal` directory. You can have more than one `internal` directory at any level of your project tree.
-
-You can optionally add a bit of extra structure to your internal packages to separate your shared and non-shared internal code. It's not required (especially for smaller projects), but it's nice to have visual clues showing the intended package use. Your actual application code can go in the `/internal/app` directory (e.g., `/internal/app/myapp`) and the code shared by those apps in the `/internal/pkg` directory (e.g., `/internal/pkg/myprivlib`).
-
-### `/pkg`
-
-Library code that's ok to use by external applications (e.g., `/pkg/mypubliclib`). Other projects will import these libraries expecting them to work, so think twice before you put something here :-) Note that the `internal` directory is a better way to ensure your private packages are not importable because it's enforced by Go. The `/pkg` directory is still a good way to explicitly communicate that the code in that directory is safe for use by others. The [`I'll take pkg over internal`](https://travisjeffery.com/b/2019/11/i-ll-take-pkg-over-internal/) blog post by Travis Jeffery provides a good overview of the `pkg` and `internal` directories and when it might make sense to use them.
-
-It's also a way to group Go code in one place when your root directory contains lots of non-Go components and directories making it easier to run various Go tools (as mentioned in these talks: [`Best Practices for Industrial Programming`](https://www.youtube.com/watch?v=PTE4VJIdHPg) from GopherCon EU 2018, [GopherCon 2018: Kat Zien - How Do You Structure Your Go Apps](https://www.youtube.com/watch?v=oL6JBUk6tj0) and [GoLab 2018 - Massimiliano Pippi - Project layout patterns in Go](https://www.youtube.com/watch?v=3gQa1LWwuzk)).
-
-See the [`/pkg`](pkg/README.md) directory if you want to see which popular Go repos use this project layout pattern. This is a common layout pattern, but it's not universally accepted and some in the Go community don't recommend it. 
-
-Ok not to use it if your app project is really small and where an extra level of nesting doesn't add much value (unless you really want to :-)). Think about it when it's getting big enough and your root directory gets pretty busy (especially if you have a lot of non-Go app components).
-
-### `/vendor`
-
-Application dependencies (managed manually or by your favorite dependency management tool like the new built-in [`Go Modules`](https://github.com/golang/go/wiki/Modules) feature). The `go mod vendor` command will create the `/vendor` directory for you. Note that you might need to add the `-mod=vendor` flag to your `go build` command if you are not using Go 1.14 where it's on by default.
-
-Don't commit your application dependencies if you are building a library.
-
-Note that since [`1.13`](https://golang.org/doc/go1.13#modules) Go also enabled the module proxy feature (using [`https://proxy.golang.org`](https://proxy.golang.org) as their module proxy server by default). Read more about it [`here`](https://blog.golang.org/module-mirror-launch) to see if it fits all of your requirements and constraints. If it does, then you won't need the `vendor` directory at all.
-
-## Service Application Directories
-
-### `/api`
-
-OpenAPI/Swagger specs, JSON schema files, protocol definition files.
-
-See the [`/api`](api/README.md) directory for examples.
-
-## Web Application Directories
-
-### `/web`
-
-Web application specific components: static web assets, server side templates and SPAs.
-
-## Common Application Directories
-
-### `/configs`
-
-Configuration file templates or default configs.
-
-Put your `confd` or `consul-template` template files here.
-
-### `/init`
-
-System init (systemd, upstart, sysv) and process manager/supervisor (runit, supervisord) configs.
-
-### `/scripts`
-
-Scripts to perform various build, install, analysis, etc operations.
-
-These scripts keep the root level Makefile small and simple (e.g., [`https://github.com/hashicorp/terraform/blob/master/Makefile`](https://github.com/hashicorp/terraform/blob/master/Makefile)).
-
-See the [`/scripts`](scripts/README.md) directory for examples.
-
-### `/build`
-
-Packaging and Continuous Integration.
-
-Put your cloud (AMI), container (Docker), OS (deb, rpm, pkg) package configurations and scripts in the `/build/package` directory.
-
-Put your CI (travis, circle, drone) configurations and scripts in the `/build/ci` directory. Note that some of the CI tools (e.g., Travis CI) are very picky about the location of their config files. Try putting the config files in the `/build/ci` directory linking them to the location where the CI tools expect them (when possible).
-
-### `/deployments`
-
-IaaS, PaaS, system and container orchestration deployment configurations and templates (docker-compose, kubernetes/helm, mesos, terraform, bosh). Note that in some repos (especially apps deployed with kubernetes) this directory is called `/deploy`.
-
-### `/test`
-
-Additional external test apps and test data. Feel free to structure the `/test` directory anyway you want. For bigger projects it makes sense to have a data subdirectory. For example, you can have `/test/data` or `/test/testdata` if you need Go to ignore what's in that directory. Note that Go will also ignore directories or files that begin with "." or "_", so you have more flexibility in terms of how you name your test data directory.
-
-See the [`/test`](test/README.md) directory for examples.
-
-## Other Directories
-
-### `/docs`
-
-Design and user documents (in addition to your godoc generated documentation).
-
-See the [`/docs`](docs/README.md) directory for examples.
-
-### `/tools`
-
-Supporting tools for this project. Note that these tools can import code from the `/pkg` and `/internal` directories.
-
-See the [`/tools`](tools/README.md) directory for examples.
-
-### `/examples`
-
-Examples for your applications and/or public libraries.
-
-See the [`/examples`](examples/README.md) directory for examples.
-
-### `/third_party`
-
-External helper tools, forked code and other 3rd party utilities (e.g., Swagger UI).
-
-### `/githooks`
-
-Git hooks.
-
-### `/assets`
-
-Other assets to go along with your repository (images, logos, etc).
-
-### `/website`
-
-This is the place to put your project's website data if you are not using Github pages.
-
-See the [`/website`](website/README.md) directory for examples.
-
-## Directories You Shouldn't Have
-
-### `/src`
-
-Some Go projects do have a `src` folder, but it usually happens when the devs came from the Java world where it's a common pattern. If you can help yourself try not to adopt this Java pattern. You really don't want your Go code or Go projects to look like Java :-)
-
-Don't confuse the project level `/src` directory with the `/src` directory Go uses for its workspaces as described in [`How to Write Go Code`](https://golang.org/doc/code.html). The `$GOPATH` environment variable points to your (current) workspace (by default it points to `$HOME/go` on non-windows systems). This workspace includes the top level `/pkg`, `/bin` and `/src` directories. Your actual project ends up being a sub-directory under `/src`, so if you have the `/src` directory in your project the project path will look like this: `/some/path/to/workspace/src/your_project/src/your_code.go`. Note that with Go 1.11 it's possible to have your project outside of your `GOPATH`, but it still doesn't mean it's a good idea to use this layout pattern.
-
-
-## Badges
-
-* [Go Report Card](https://goreportcard.com/) - It will scan your code with `gofmt`, `go vet`, `gocyclo`, `golint`, `ineffassign`, `license` and `misspell`. Replace `github.com/golang-standards/project-layout` with your project reference.
-
-* [GoDoc](http://godoc.org) - It will provide online version of your GoDoc generated documentation. Change the link to point to your project.
-
-* Release - It will show the latest release number for your project. Change the github link to point to your project.
-
-[![Go Report Card](https://goreportcard.com/badge/github.com/golang-standards/project-layout?style=flat-square)](https://goreportcard.com/report/github.com/golang-standards/project-layout)
-[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](http://godoc.org/github.com/golang-standards/project-layout)
-[![Release](https://img.shields.io/github/release/golang-standards/project-layout.svg?style=flat-square)](https://github.com/golang-standards/project-layout/releases/latest)
-
-## Notes
-
-A more opinionated project template with sample/reusable configs, scripts and code is a WIP.
-
+# KBC Component Python template
+
+Golang template for KBC Component creation. Defines the default structure and all Bitbucket pipeline CI scripts for automatic deployment.
+
+Use as a starting point when creating a new component.
+
+Example uses [keboola-python-util-lib](https://bitbucket.org/kds_consulting_team/keboola-python-util-lib/src/master/) library providing useful methods for KBC related tasks and boilerplate methods often needed by components, for more details see [documentation](https://bitbucket.org/kds_consulting_team/keboola-python-util-lib/src/master/README.md)
+
+
+## Recommended component architecture
+It is recommended to use the [keboola-python-util-lib library](https://bitbucket.org/kds_consulting_team/keboola-python-util-lib/src/master/), 
+for each component. Major advantage is that it reduces the boilerplate code replication, the developer can focus on core component logic 
+and not on boilerplate tasks. If anything is missing in the library, please fork and create a pull request with additional changes, 
+so we can all benefit from it
+
+**Base components on [KBCEnvHandler](https://bitbucket.org/kds_consulting_team/keboola-python-util-lib/src/master/docs/env_handler.md?at=master)**
+
+- No need to write configuration processing and validation code each time
+- No need to setup logging environment manually
+- No need to write code to store manifests, write statefile, retrieve dates based on relative period, and many more.
+- The main focus can be the core component logic, which increases the code readability for new comers.
+
+**Base Client on [HtttpClientBase](https://bitbucket.org/kds_consulting_team/keboola-python-util-lib/src/master/docs/client_base.md?at=master)**
+
+- No need to write HTTP request handling over and over again
+- Covers basic authentication, retry strategy, headers, default parameters
+
+**Process results using [result.py](https://bitbucket.org/kds_consulting_team/keboola-python-util-lib/src/master/docs/result.md?at=master) package**
+
+- No need to use pandas
+- Enables basic json response flattening
+- Fixed headers, user values and more useful functionality
+
+
+### Example component
+This template contains functional example of an [extractor component](https://bitbucket.org/kds_consulting_team/kbc-python-template/src/master/src/component.py), 
+it can be run with [sample configuration](https://bitbucket.org/kds_consulting_team/kbc-python-template/src/master/data/) and it produces valid results. 
+It is advisable to use this structure as a base for new components. Especially the `component.py` module, which should only 
+contain the base logic necessary for communication with KBC interface, processing parameters, collecting results
+ and calling targeted API service methods. 
+
+
+##Creating a new component
+Clone this repository into new folder and remove git history
+```bash
+git clone git@github.com:jmbrooks/kbc-golang-template.git my-new-component
+cd my-new-component
+rm -rf .git
+git init
+git remote add origin PATH_TO_YOUR_BB_REPO
+git update-index --chmod=+x deploy.sh
+git update-index --chmod=+x scripts/update_dev_portal_properties.sh
+git add .
+git commit -m 'initial'
+git push -u origin master
+```
+
+
+##Setting up the CI
+ - Enable [pipelines](https://confluence.atlassian.com/bitbucket/get-started-with-bitbucket-pipelines-792298921.html) in the repository.
+ - Set `KBC_DEVELOPERPORTAL_APP` env variable in Bitbucket (dev portal app id)
+ 
+ In case it is not set on the account level, set also other required dev portal env variables:
+ - `KBC_DEVELOPERPORTAL_PASSWORD` - service account password
+ - `KBC_DEVELOPERPORTAL_USERNAME` - service account username
+ - `KBC_DEVELOPERPORTAL_VENDOR` - dev portal vendor
+ - `APP_IMAGE` - arbitrary tag name of the docker image e.g. â€œkeboola-componentâ€
+ - `KBC_STORAGE_TOKEN` - in case you wish to run KBC automated tests
+  
+ 
+ ![picture](docs/imgs/ci_variable.png)
+ 
+The script execution is defined in three stages:
+
+### Default stage
+This script is executed on push to any branch except the master branch. It executes basic build and code quality steps. Following steps are performed:
+Build docker image
+Execute flake8 lint tests
+Execute python unittest
+(Optional) Push image with tag :test into the AWS repository for manual testing in KBC
+If any of the above steps results in non 0 status, the build will fail. It is impossible to merge branches that fail to build into the master branch.
+
+### Master stage
+This script is executed on any push or change in the master branch. It performs every step as the default stage. Additionally, 
+the `./scripts/update_dev_portal_properties.sh` script is executed. 
+This script propagates all changes in the Component configuration files (component_config folder) to the Developer portal.
+Currently these Dev Portal configuration parameters are supported:
+ - `configuration_schema.json`
+ - `short_description.md`
+ - `long_description.md`    
+
+The choice to include this script directly in the master branch was made to simplify ad-hoc changes of the component configuration parameters. For instance if you wish to slightly modify the configuration schema without affecting the code itself, it is possible to simply push the changes directly into the master and these will be automatically propagated to the production without rebuilding the image itself. Solely Developer Portal configuration metadata is deployed at this stage.
+
+### Tagged commit stage
+Whenever a tagged commit is added, or tag created this script gets executed. This is a deployment phase, so a successful build results in new code being deployed in KBC production.
+At this stage all steps present in the default and master stage are executed. Additionally, 
+`deploy.sh` script that pushes the newly built image / tag into the ECR repository and KBC production is executed.
+The deploy script is executed only after all tests and proper build steps passed. 
+Moreover, the `deploy.sh` script will be executed **only in the master branch**. In other words if you create a tagged commit in another branch, the pipeline gets triggered but deployment script will fail, because it is not triggered within a master branch. This is to prevent accidental deployment from a feature branch.
+
+ 
+ 
+## Development
+ 
+This example contains runnable container with simple unittest. For local testing it is useful to include `data` folder in the root
+and use docker-compose commands to run the container or execute tests. 
+
+If required, change local data folder (the `CUSTOM_FOLDER` placeholder) path to your custom path:
+```yaml
+    volumes:
+      - ./:/code
+      - ./CUSTOM_FOLDER:/data
+```
+
+Clone this repository, init the workspace and run the component with following command:
+
+```
+git clone git@github.com:jmbrooks/kbc-golang-template.git my-new-component
+cd my-new-component
+docker-compose build
+docker-compose run --rm dev
+```
+
+Run the test suite and lint check using this command:
+
+```
+docker-compose run --rm test
+```
+
+## Testing
+
+The preset pipeline scripts contain sections allowing pushing testing image into the ECR repository and automatic 
+testing in a dedicated project. These sections are by default commented out. 
+
+**Running KBC tests on deploy step, before deployment**
+
+Uncomment following section in the deployment step in `bitbucket-pipelines.yml` file:
+
+```yaml
+            # push test image to ECR - uncomment when initialised
+            # - export REPOSITORY=`docker run --rm -e KBC_DEVELOPERPORTAL_USERNAME -e KBC_DEVELOPERPORTAL_PASSWORD -e KBC_DEVELOPERPORTAL_URL quay.io/keboola/developer-portal-cli-v2:latest ecr:get-repository $KBC_DEVELOPERPORTAL_VENDOR $KBC_DEVELOPERPORTAL_APP`
+            # - docker tag $APP_IMAGE:latest $REPOSITORY:test
+            # - eval $(docker run --rm -e KBC_DEVELOPERPORTAL_USERNAME -e KBC_DEVELOPERPORTAL_PASSWORD -e KBC_DEVELOPERPORTAL_URL quay.io/keboola/developer-portal-cli-v2:latest ecr:get-login $KBC_DEVELOPERPORTAL_VENDOR $KBC_DEVELOPERPORTAL_APP)
+            # - docker push $REPOSITORY:test
+            # - docker run --rm -e KBC_STORAGE_TOKEN quay.io/keboola/syrup-cli:latest run-job $KBC_DEVELOPERPORTAL_APP BASE_KBC_CONFIG test
+            # - docker run --rm -e KBC_STORAGE_TOKEN quay.io/keboola/syrup-cli:latest run-job $KBC_DEVELOPERPORTAL_APP KBC_CONFIG_1 test
+            - ./scripts/update_dev_portal_properties.sh
+            - ./deploy.sh
+```
+
+Make sure that you have `KBC_STORAGE_TOKEN` env. variable set, containing appropriate storage token with access 
+to your KBC project. Also make sure to create a functional testing configuration and replace the `BASE_KBC_CONFIG` placeholder with its id.
+
+**Pushing testing image for manual KBC tests**
+
+In some cases you may wish to execute a testing version of your component manually prior to publishing. For instance to test various
+configurations on it. For that it may be convenient to push the `test` image on every push either to master, or any branch.
+
+To achieve that simply uncomment appropriate sections in `bitbucket-pipelines.yml` file, either in master branch step or in `default` step.
+
+```yaml
+            # push test image to ecr - uncomment for testing before deployment
+#            - echo 'Pushing test image to repo. [tag=test]'
+#            - export REPOSITORY=`docker run --rm -e KBC_DEVELOPERPORTAL_USERNAME -e KBC_DEVELOPERPORTAL_PASSWORD -e KBC_DEVELOPERPORTAL_URL quay.io/keboola/developer-portal-cli-v2:latest ecr:get-repository $KBC_DEVELOPERPORTAL_VENDOR $KBC_DEVELOPERPORTAL_APP`
+#            - docker tag $APP_IMAGE:latest $REPOSITORY:test
+#            - eval $(docker run --rm -e KBC_DEVELOPERPORTAL_USERNAME -e KBC_DEVELOPERPORTAL_PASSWORD -e KBC_DEVELOPERPORTAL_URL quay.io/keboola/developer-portal-cli-v2:latest ecr:get-login $KBC_DEVELOPERPORTAL_VENDOR $KBC_DEVELOPERPORTAL_APP)
+#            - docker push $REPOSITORY:test
+```
+ 
+ Once the build is finished, you may run such configuration in any KBC project as many times as you want by using [run-job](https://kebooladocker.docs.apiary.io/#reference/run/create-a-job-with-image/run-job) API call, using the `test` image tag.
+
+# Integration
+
+For information about deployment and integration with KBC, please refer to the [deployment section of developers documentation](https://developers.keboola.com/extend/component/deployment/) 
